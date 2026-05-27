@@ -1,15 +1,16 @@
 import { PrismaClient, IssuanceStatus } from '@prisma/client';
+import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('🌱 Starting database seeding...');
 
-  // 1. Clean existing records (in reverse dependency order to prevent FK violations)
   console.log('🧹 Clearing old data...');
   await prisma.issuance.deleteMany({});
   await prisma.book.deleteMany({});
   await prisma.member.deleteMany({});
+  await prisma.user.deleteMany({});
 
   // 2. Generate 10 Members
   console.log('👥 Creating 10 members...');
@@ -233,6 +234,16 @@ async function main() {
         status: IssuanceStatus.ISSUED,
       },
     ],
+  });
+
+  console.log('👤 Creating default Administrator...');
+  const hashedPassword = bcrypt.hashSync('password123', 10);
+  await prisma.user.create({
+    data: {
+      email: 'admin@library.com',
+      password: hashedPassword,
+      role: 'ADMIN',
+    },
   });
 
   console.log('🎉 Database seeding completed successfully!');

@@ -196,6 +196,108 @@ depends_on:
 
 ---
 
+## 🔒 Authentication & API Security Architecture
+
+LuminaLib implements a stateless, token-based security architecture using JSON Web Tokens (JWT) and cryptographic hashing.
+
+### 🔑 Authentication Flow Map
+```text
+  Client Login (POST /auth/login) ──> bcrypt verify ──> Sign JWT Token ──> Client Stores Token
+                                                                                │
+  Client Protected API request ──> Pass Bearer Token Header ──> JWT Middleware ──> Access Granted (GET /auth/me)
+```
+
+- **JWT Expiration**: Tokens expire in `1d` (configurable via `JWT_EXPIRES_IN`).
+- **Cryptographic Security**: Passwords are saved as secure salt hashes using **bcrypt** with a default salt round factor of `10`.
+- **IP Rate Limiting**: Prevents automated brute-force attacks by limiting login requests to a maximum of `100` attempts per `15` minutes per IP.
+- **Helmet Headers**: Enforces strict security configurations (HSTS, Content Security Policies) on every server response.
+
+---
+
+### 📡 Security API Endpoints
+
+| Method | Endpoint | Description | Auth Requirement |
+| :--- | :--- | :--- | :--- |
+| **POST** | `/auth/login` | Authenticate admin & acquire JWT | Public (Zod validated) |
+| **GET** | `/auth/me` | Fetch authenticated user profile | Bearer Token Required |
+
+#### 1. Public Authentication (`POST /auth/login`)
+- **Request Payload**:
+```json
+{
+  "email": "admin@library.com",
+  "password": "password123"
+}
+```
+- **Response Payload**:
+```json
+{
+  "success": true,
+  "message": "Login successful",
+  "data": {
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  }
+}
+```
+
+#### 2. Protected Request Header
+To query `/auth/me` or other protected endpoints, clients must pass the JWT token in their request headers:
+```text
+Authorization: Bearer <your_jwt_token_here>
+```
+
+---
+
+### 📊 Standardized API Response Layouts
+
+All server operations return a standardized JSON format:
+
+#### Success Format (2xx)
+```json
+{
+  "success": true,
+  "message": "Operation completed successfully.",
+  "data": {}
+}
+```
+
+#### Error Format (4xx / 5xx)
+```json
+{
+  "success": false,
+  "message": "Error details and summaries.",
+  "errors": [] // Array of validation error details (for 400 Bad Request)
+}
+```
+
+---
+
+## 🔍 Troubleshooting & HMR Watch Polling
+
+### 1. Hot Module Replacement (HMR) Fails to Trigger
+If you are developing inside a WSL/Windows environment and code modifications do not compile instantly inside your React container, verify that Vite is configured to use polling. In `frontend/vite.config.ts`, we enforce:
+```ts
+server: {
+  host: true,
+  watch: {
+    usePolling: true
+  }
+}
+```
+This bypasses Linux `inotify` block limits across virtual filesystems.
+
+### 2. Backend fails to connect to Database
+If the backend logs show connection timeout errors:
+- Ensure the PostgreSQL database container has reached a `healthy` state before the backend starts up. Docker Compose handles this via a `healthcheck` in `docker-compose.yml`:
+```yaml
+depends_on:
+  postgres:
+    condition: service_healthy
+```
+- Verify that `DATABASE_URL` in your `.env` refers to `postgres` as the hostname (e.g., `postgresql://postgres:postgres@postgres:5432/...`) inside Docker, whereas local runs outside containers must use `localhost` (e.g., `postgresql://postgres:postgres@localhost:5432/...`).
+
+---
+
 ## 💡 System Design Q&A (Interview Preparation)
 
 ### 🐋 Infrastructure & Docker Questions
@@ -215,3 +317,15 @@ depends_on:
   Performance optimizations. Running nested counts (e.g. counting total copies, then subtracting returned issuances) on every catalog cataloging fetch scales poorly ($O(N)$ database query). Keeping a reactive integer reduces searches to a basic constant-time ($O(1)$) fetch.
 - **Why indexes on email, isbn, status, issueDate, and targetReturnDate?**
   Drastically reduces lookup overheads on core operational paths. Quick search triggers (searching books by `isbn`, searching members by `email`, locating overdue items on `targetReturnDate`, filtering logs on `status`) are optimized into index seeks, keeping search scale constant over millions of records.
+
+### 🔒 Security & Middleware Questions
+- **Why JSON Web Tokens (JWT) for authentication?**
+  Enables stateless, highly scalable sessions. The server does not need to query session states or check database stores on every incoming request. Validating signatures cryptographically ($O(1)$ verification) is highly performant and scales seamlessly across clustered systems.
+- **Why bcrypt for password hashing?**
+  Designed to prevent brute-force attacks. Bcrypt utilizes a custom workload factor (salt rounds) that is computationally expensive, slowing down password cracking attempts. It also applies random salts natively to block pre-computed rainbow table queries.
+- **Why Zod schemas instead of standard JavaScript objects?**
+  Enforces type-safe request parsing at runtime. Zod acts as a secure boundary, scrubbing unexpected fields, formatting correct types, and rejecting malformed payloads before they reach business layers. This prevents injection attacks and keeps database records clean.
+- **Why centralized error handler middleware?**
+  Prevents stack trace leaks and maintains uniform interface contracts. Uncaught errors are safely logged internally while consumers receive clean, formatted, and secure JSON responses without exposing internal server architecture.
+- **Why rate limiters on public login endpoints?**
+  Prevents brute-force credential stuffing. Limiting requests per IP slows down automated spammers, protecting the authentication database from server exhaustion.
