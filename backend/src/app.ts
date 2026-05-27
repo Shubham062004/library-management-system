@@ -7,6 +7,7 @@ import { config } from './config';
 import router from './routes';
 import authRouter from './routes/authRoutes';
 import memberRouter from './modules/member/member.routes';
+import bookRouter from './modules/book/book.routes';
 import { errorHandler } from './middleware/errorHandler';
 
 const app = express();
@@ -42,6 +43,7 @@ app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 // Mount REST Routers
 app.use('/auth', authRouter);
 app.use('/members', memberRouter);
+app.use('/books', bookRouter);
 app.use('/', router);
 
 // Catch-all for undefined route targets
