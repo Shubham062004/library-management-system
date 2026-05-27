@@ -38,6 +38,7 @@ library-management-system/
 │   │   ├── controllers/  # Route handler controllers (business logic)
 │   │   ├── middleware/   # Helmet, CORS, loggers, error middleware
 │   │   ├── models/       # Virtual data models or custom validators
+│   │   ├── modules/      # Feature-isolated modules (e.g. member)
 │   │   ├── prisma/       # Client singleton connection service
 │   │   ├── routes/       # Modular path routers
 │   │   ├── services/     # Third-party adapters and transactional logic
@@ -214,12 +215,22 @@ LuminaLib implements a stateless, token-based security architecture using JSON W
 
 ---
 
-### 📡 Security API Endpoints
+### 📡 Security & Member CRUD API Endpoints
+
+All Member endpoints require the **Bearer JWT** authorization header: `Authorization: Bearer <token>`
 
 | Method | Endpoint | Description | Auth Requirement |
 | :--- | :--- | :--- | :--- |
 | **POST** | `/auth/login` | Authenticate admin & acquire JWT | Public (Zod validated) |
 | **GET** | `/auth/me` | Fetch authenticated user profile | Bearer Token Required |
+| **POST** | `/members` | Create a new library cardholder | Bearer Token Required (Zod validated) |
+| **GET** | `/members` | List members (supports page/search/sorting) | Bearer Token Required |
+| **GET** | `/members/:id` | Fetch specific cardholder by UUID | Bearer Token Required |
+| **PUT** | `/members/:id` | Update cardholder details | Bearer Token Required (Zod validated) |
+
+---
+
+### 📝 API Usage & JSON Payloads Examples
 
 #### 1. Public Authentication (`POST /auth/login`)
 - **Request Payload**:
@@ -240,10 +251,86 @@ LuminaLib implements a stateless, token-based security architecture using JSON W
 }
 ```
 
-#### 2. Protected Request Header
-To query `/auth/me` or other protected endpoints, clients must pass the JWT token in their request headers:
-```text
-Authorization: Bearer <your_jwt_token_here>
+#### 2. Create Library Member (`POST /members`)
+- **Request Payload**:
+```json
+{
+  "name": "Rahul Sharma",
+  "email": "rahul@example.com",
+  "phone": "9876543210"
+}
+```
+- **Response Payload**:
+```json
+{
+  "success": true,
+  "message": "Member created successfully",
+  "data": {
+    "id": "e2a392ab-9d8a-40a2-aa59-873cf106b3e6",
+    "name": "Rahul Sharma",
+    "email": "rahul@example.com",
+    "phone": "9876543210",
+    "membershipDate": "2026-05-28T00:00:00.000Z",
+    "createdAt": "2026-05-28T00:00:00.000Z",
+    "updatedAt": "2026-05-28T00:00:00.000Z"
+  }
+}
+```
+
+#### 3. List Members with Filters (`GET /members`)
+Supports query parameters:
+* `page`: Page index (defaults to `1`)
+* `limit`: Page count (defaults to `10`)
+* `search`: Matches substrings in `name` or `email` case-insensitively
+* `sortBy`: Field to sort on (`name`, `email`, `membershipDate`, `createdAt`)
+* `sortOrder`: Sorting direction (`asc` or `desc`)
+
+- **Example Query**: `GET /members?page=1&limit=10&search=rahul&sortBy=name&sortOrder=asc`
+- **Response Payload**:
+```json
+{
+  "success": true,
+  "message": "Members retrieved successfully",
+  "data": {
+    "members": [
+      {
+        "id": "e2a392ab-9d8a-40a2-aa59-873cf106b3e6",
+        "name": "Rahul Sharma",
+        "email": "rahul@example.com",
+        "phone": "9876543210",
+        "membershipDate": "2026-05-28T00:00:00.000Z"
+      }
+    ],
+    "meta": {
+      "total": 1,
+      "page": 1,
+      "limit": 10,
+      "totalPages": 1
+    }
+  }
+}
+```
+
+#### 4. Update Library Member (`PUT /members/:id`)
+- **Request Payload**:
+```json
+{
+  "name": "Rahul Sharma Updated",
+  "phone": "9999988888"
+}
+```
+- **Response Payload**:
+```json
+{
+  "success": true,
+  "message": "Member updated successfully",
+  "data": {
+    "id": "e2a392ab-9d8a-40a2-aa59-873cf106b3e6",
+    "name": "Rahul Sharma Updated",
+    "email": "rahul@example.com",
+    "phone": "9999988888"
+  }
+}
 ```
 
 ---
@@ -270,31 +357,6 @@ All server operations return a standardized JSON format:
 }
 ```
 
----
-
-## 🔍 Troubleshooting & HMR Watch Polling
-
-### 1. Hot Module Replacement (HMR) Fails to Trigger
-If you are developing inside a WSL/Windows environment and code modifications do not compile instantly inside your React container, verify that Vite is configured to use polling. In `frontend/vite.config.ts`, we enforce:
-```ts
-server: {
-  host: true,
-  watch: {
-    usePolling: true
-  }
-}
-```
-This bypasses Linux `inotify` block limits across virtual filesystems.
-
-### 2. Backend fails to connect to Database
-If the backend logs show connection timeout errors:
-- Ensure the PostgreSQL database container has reached a `healthy` state before the backend starts up. Docker Compose handles this via a `healthcheck` in `docker-compose.yml`:
-```yaml
-depends_on:
-  postgres:
-    condition: service_healthy
-```
-- Verify that `DATABASE_URL` in your `.env` refers to `postgres` as the hostname (e.g., `postgresql://postgres:postgres@postgres:5432/...`) inside Docker, whereas local runs outside containers must use `localhost` (e.g., `postgresql://postgres:postgres@localhost:5432/...`).
 
 ---
 
