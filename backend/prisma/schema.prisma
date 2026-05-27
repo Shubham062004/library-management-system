@@ -10,12 +10,53 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Foundational schema placeholder
-// Real models (Books, Members, Transactions) will be defined in subsequent feature updates.
-model SystemConfig {
-  id        String   @id @default(uuid())
-  key       String   @unique
-  value     String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model Member {
+  id             String     @id @default(uuid()) @db.Uuid
+  name           String
+  email          String     @unique
+  phone          String
+  membershipDate DateTime   @default(now())
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  issuances      Issuance[]
+
+  @@index([email])
+}
+
+model Book {
+  id                String     @id @default(uuid()) @db.Uuid
+  title             String
+  author            String
+  isbn              String     @unique
+  quantity          Int
+  availableQuantity Int
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  issuances         Issuance[]
+
+  @@index([isbn])
+}
+
+model Issuance {
+  id               String         @id @default(uuid()) @db.Uuid
+  memberId         String         @db.Uuid
+  bookId           String         @db.Uuid
+  issueDate        DateTime       @default(now())
+  targetReturnDate DateTime
+  actualReturnDate DateTime?
+  status           IssuanceStatus @default(ISSUED)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  member Member @relation(fields: [memberId], references: [id], onDelete: Restrict)
+  book   Book   @relation(fields: [bookId], references: [id], onDelete: Restrict)
+
+  @@index([status])
+  @@index([issueDate])
+  @@index([targetReturnDate])
+}
+
+enum IssuanceStatus {
+  ISSUED
+  RETURNED
 }

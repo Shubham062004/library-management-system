@@ -122,6 +122,43 @@ Open [http://localhost:5000/health](http://localhost:5000/health) to verify stat
 }
 ```
 
+---
+
+## 🗄️ Relational Database Architecture & Workflow
+
+LuminaLib utilizes a normalized PostgreSQL layout managed using Prisma ORM.
+
+### 📊 Database Relational Map
+```text
+  Member (1) ─── borrow history ─── (Many) Issuance (Many) ─── inventory check ─── (1) Book
+```
+
+- **Member**: Handles cardholder information (unique `email`, registration `membershipDate`).
+- **Book**: Handles available publications (unique `isbn`, inventory `quantity`, tracked `availableQuantity`).
+- **Issuance**: Links members with borrowed books, storing dates (`issueDate`, `targetReturnDate`, nullable `actualReturnDate`) and native `IssuanceStatus` states (`ISSUED`, `RETURNED`).
+
+---
+
+### ⚙️ Prisma Database CLI Commands
+
+Execute these workflows within the `backend/` directory:
+
+```bash
+# 1. Compile Schema to TypeScript Typings
+npx prisma generate
+
+# 2. Sync Schema to PostgreSQL Database & Create Migration
+npx prisma migrate dev --name init
+
+# 3. Seed Database with Sample Items (10 members, 20 books, 7 transactions)
+npm run seed
+
+# 4. Boot Up Prisma Visual Studio Database Explorer
+npx prisma studio
+```
+
+---
+
 ### 2. Frontend React Setup
 Open a second terminal window, install packages, and boot Vite's dev server:
 ```bash
@@ -161,9 +198,20 @@ depends_on:
 
 ## 💡 System Design Q&A (Interview Preparation)
 
+### 🐋 Infrastructure & Docker Questions
 - **Why Docker & Multi-Stage Staging?**
   Guarantees absolute workspace consistency. Developers run the application inside the exact same container setups that run inside staging and production pipelines, eliminating "works on my machine" bugs.
 - **Why Separate Containers & Bridges?**
   Ensures microservice-readiness and service isolation. Databases, APIs, and client-facing web servers scale and crash independently on a dedicated bridge network (`lms-network`).
 - **Why Bind Mounts & Anonymous Volumes?**
-  Bind mounts (`./frontend:/app`) synchronize code updates in real-time to enable hot-reloading inside containers. Anonymous volumes (`/app/node_modules`) prevent the host machine from overriding node modules inside the container, preventing OS-level binary incompatibilities.
+  Bind mounts (`./frontend:/app`) synchronize code updates in real-time to enable hot-reloading inside containers. Anonymous volumes (`/app/node_modules`) prevent the host machine from overriding node modules inside the container, preventing OS-level binary incompatibilities.
+
+### 🗄️ Database & Prisma Questions
+- **Why UUIDs instead of auto-incrementing Integers?**
+  UUIDs are distributed-safe and impossible to guess sequentially. This blocks external malicious users from enumerating database records (e.g., calling `GET /api/members/1`, then `/2`, etc.), improving APIs security.
+- **Why a separate Issuance Junction Table?**
+  Maintains complete transaction history and historical tracking. Putting borrow details directly onto Member or Book arrays fails to track borrowing histories, late histories, and borrowing trends.
+- **Why record availableQuantity on Book instead of running counts on-the-fly?**
+  Performance optimizations. Running nested counts (e.g. counting total copies, then subtracting returned issuances) on every catalog cataloging fetch scales poorly ($O(N)$ database query). Keeping a reactive integer reduces searches to a basic constant-time ($O(1)$) fetch.
+- **Why indexes on email, isbn, status, issueDate, and targetReturnDate?**
+  Drastically reduces lookup overheads on core operational paths. Quick search triggers (searching books by `isbn`, searching members by `email`, locating overdue items on `targetReturnDate`, filtering logs on `status`) are optimized into index seeks, keeping search scale constant over millions of records.
