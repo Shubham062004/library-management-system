@@ -1,4 +1,3 @@
-import React from 'react';
 import { Search, Plus, Filter, Book } from 'lucide-react';
 
 export default function Books() {

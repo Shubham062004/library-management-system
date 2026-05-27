@@ -1,4 +1,3 @@
-import React from 'react';
 import { Search, Plus, Filter, Users } from 'lucide-react';
 
 export default function Members() {

@@ -88,24 +88,27 @@ cp frontend/.env.example frontend/.env
 Spins up PostgreSQL, compiles backend TypeScript, bundles the React application inside Nginx, and exposes the services cleanly.
 
 ```bash
-# Build and run containers in detached mode
+# Build and run the entire local development stack in the foreground (recommended for logs)
+docker compose up --build
+
+# Or build and run in detached background mode
 docker compose up --build -d
 
-# Verify container statuses
+# Verify container statuses and health states
 docker compose ps
 ```
 
-Services are exposed at the following ports:
-- **React Frontend Dashboard**: [http://localhost:3000](http://localhost:3000) (Nginx production build container) or [http://localhost:5173](http://localhost:5173) (Local development Vite container)
+Services are exposed at the following endpoints:
+- **React Frontend Dashboard**: [http://localhost:5173](http://localhost:5173) (With HMR hot-reloading fully active)
 - **REST API Server**: [http://localhost:5000](http://localhost:5000)
 - **PostgreSQL Database**: `localhost:5432`
 
 ---
 
-## 🛠️ Running Services Locally for Active Development
+## 🛠️ Running Services Locally for Active Development (Outside Docker)
 
 ### 1. Backend Server Setup
-Navigate into the `backend/` directory, install packages, and boot the server in active hot-reloading mode:
+Navigate into the `backend/` directory, install packages, and boot the server:
 ```bash
 cd backend
 npm install
@@ -130,11 +133,37 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 ---
 
-## 🛡️ Code Quality & Coding Conventions
+## 🔍 Troubleshooting & HMR Watch Polling
 
-- **Linting**: Both services are backed by custom ESLint configurations to ensure strict typing, catch syntax errors early, and enforce robust formatting standards.
-- **Formatting**: Integrated with Prettier to maintain uniform formatting across all TypeScript and CSS layouts.
-```bash
-# In backend/ or frontend/
-npm run lint
+### 1. Hot Module Replacement (HMR) Fails to Trigger
+If you are developing inside a WSL/Windows environment and code modifications do not compile instantly inside your React container, verify that Vite is configured to use polling. In `frontend/vite.config.ts`, we enforce:
+```ts
+server: {
+  host: true,
+  watch: {
+    usePolling: true
+  }
+}
 ```
+This bypasses Linux `inotify` block limits across virtual filesystems.
+
+### 2. Backend fails to connect to Database
+If the backend logs show connection timeout errors:
+- Ensure the PostgreSQL database container has reached a `healthy` state before the backend starts up. Docker Compose handles this via a `healthcheck` in `docker-compose.yml`:
+```yaml
+depends_on:
+  postgres:
+    condition: service_healthy
+```
+- Verify that `DATABASE_URL` in your `.env` refers to `postgres` as the hostname (e.g., `postgresql://postgres:postgres@postgres:5432/...`) inside Docker, whereas local runs outside containers must use `localhost` (e.g., `postgresql://postgres:postgres@localhost:5432/...`).
+
+---
+
+## 💡 System Design Q&A (Interview Preparation)
+
+- **Why Docker & Multi-Stage Staging?**
+  Guarantees absolute workspace consistency. Developers run the application inside the exact same container setups that run inside staging and production pipelines, eliminating "works on my machine" bugs.
+- **Why Separate Containers & Bridges?**
+  Ensures microservice-readiness and service isolation. Databases, APIs, and client-facing web servers scale and crash independently on a dedicated bridge network (`lms-network`).
+- **Why Bind Mounts & Anonymous Volumes?**
+  Bind mounts (`./frontend:/app`) synchronize code updates in real-time to enable hot-reloading inside containers. Anonymous volumes (`/app/node_modules`) prevent the host machine from overriding node modules inside the container, preventing OS-level binary incompatibilities.

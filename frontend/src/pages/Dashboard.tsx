@@ -1,4 +1,3 @@
-import React from 'react';
 import { BookOpen, Users, ClipboardList, AlertCircle, TrendingUp, Plus, ArrowRight } from 'lucide-react';
 
 export default function Dashboard() {

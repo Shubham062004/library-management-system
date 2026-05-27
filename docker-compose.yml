@@ -13,9 +13,11 @@ services:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - lms_db_data:/var/lib/postgresql/data
+    networks:
+      - lms-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d library_db"]
-      interval: 10s
+      interval: 5s
       timeout: 5s
       retries: 5
 
@@ -23,30 +25,47 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      target: development
     container_name: lms-backend
     restart: always
+    ports:
+      - "${BACKEND_PORT:-5000}:5000"
     environment:
       PORT: ${BACKEND_PORT:-5000}
       NODE_ENV: development
       DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/library_db?schema=public}
-    ports:
-      - "${BACKEND_PORT:-5000}:5000"
+      JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-signing-key}
+    volumes:
+      - ./backend:/usr/src/app
+      - /usr/src/app/node_modules
     depends_on:
       postgres:
         condition: service_healthy
+    networks:
+      - lms-network
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      target: development
     container_name: lms-frontend
     restart: always
     ports:
-      - "${FRONTEND_PORT:-3000}:80"
+      - "${FRONTEND_PORT:-5173}:5173"
     environment:
       - VITE_API_URL=${VITE_API_URL:-http://localhost:5000}
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
     depends_on:
       - backend
+    networks:
+      - lms-network
 
 volumes:
   lms_db_data:
+
+networks:
+  lms-network:
+    driver: bridge
