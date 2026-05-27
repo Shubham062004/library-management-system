@@ -231,6 +231,12 @@ All secure endpoints require the **Bearer JWT** authorization header: `Authoriza
 | **GET** | `/books` | List books (supports page/search/sorting/filters) | Bearer Token Required |
 | **GET** | `/books/:id` | Fetch specific book by UUID | Bearer Token Required |
 | **PUT** | `/books/:id` | Update book details and inventory | Bearer Token Required (Zod validated) |
+| **POST** | `/issuances` | Issue a book to a member | Bearer Token Required (Zod validated) |
+| **GET** | `/issuances` | List issuance records with filters | Bearer Token Required |
+| **GET** | `/issuances/outstanding` | List outstanding unreturned borrows | Bearer Token Required |
+| **GET** | `/issuances/overdue` | List overdue active borrows | Bearer Token Required |
+| **GET** | `/issuances/:id` | Fetch specific issuance details | Bearer Token Required |
+| **PUT** | `/issuances/:id/return` | Return a borrowed book | Bearer Token Required |
 
 ---
 
@@ -399,6 +405,88 @@ Supports query parameters:
       "limit": 5,
       "totalPages": 1
     }
+  }
+}
+```
+
+#### 7. Issue a Book (`POST /issuances`)
+- **Request Payload**:
+```json
+{
+  "memberId": "e2a392ab-9d8a-40a2-aa59-873cf106b3e6",
+  "bookId": "7ac19532-6804-4b57-a9a7-47b2ea1a243e",
+  "targetReturnDate": "2026-06-15T00:00:00.000Z"
+}
+```
+- **Response Payload (Atomic Transaction Completed)**:
+```json
+{
+  "success": true,
+  "message": "Book issued successfully",
+  "data": {
+    "id": "90e29ad3-2c1b-4f91-884c-bdf0a256abcb",
+    "memberId": "e2a392ab-9d8a-40a2-aa59-873cf106b3e6",
+    "bookId": "7ac19532-6804-4b57-a9a7-47b2ea1a243e",
+    "issueDate": "2026-05-28T00:00:00.000Z",
+    "targetReturnDate": "2026-06-15T00:00:00.000Z",
+    "actualReturnDate": null,
+    "status": "ISSUED",
+    "member": {
+      "id": "e2a392ab-9d8a-40a2-aa59-873cf106b3e6",
+      "name": "Rahul Sharma",
+      "email": "rahul@example.com"
+    },
+    "book": {
+      "id": "7ac19532-6804-4b57-a9a7-47b2ea1a243e",
+      "title": "Atomic Habits",
+      "author": "James Clear",
+      "isbn": "9780735211292"
+    }
+  }
+}
+```
+
+#### 8. Return a Borrowed Book (`PUT /issuances/:id/return`)
+- **Response Payload (Atomic Transaction Restores Stock)**:
+```json
+{
+  "success": true,
+  "message": "Book returned successfully",
+  "data": {
+    "id": "90e29ad3-2c1b-4f91-884c-bdf0a256abcb",
+    "status": "RETURNED",
+    "actualReturnDate": "2026-05-28T12:00:00.000Z"
+  }
+}
+```
+
+#### 9. List Active Overdue Books (`GET /issuances/overdue`)
+- **Response Payload (Includes Dynamic overdueDays Computation)**:
+```json
+{
+  "success": true,
+  "message": "Overdue issuances retrieved successfully",
+  "data": {
+    "issuances": [
+      {
+        "id": "90e29ad3-2c1b-4f91-884c-bdf0a256abcb",
+        "memberId": "e2a392ab-9d8a-40a2-aa59-873cf106b3e6",
+        "bookId": "7ac19532-6804-4b57-a9a7-47b2ea1a243e",
+        "issueDate": "2026-05-10T00:00:00.000Z",
+        "targetReturnDate": "2026-05-20T00:00:00.000Z",
+        "overdueDays": 8,
+        "member": {
+          "id": "e2a392ab-9d8a-40a2-aa59-873cf106b3e6",
+          "name": "Rahul Sharma",
+          "email": "rahul@example.com"
+        },
+        "book": {
+          "id": "7ac19532-6804-4b57-a9a7-47b2ea1a243e",
+          "title": "Atomic Habits",
+          "author": "James Clear"
+        }
+      }
+    ]
   }
 }
 ```
