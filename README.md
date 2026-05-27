@@ -215,9 +215,9 @@ LuminaLib implements a stateless, token-based security architecture using JSON W
 
 ---
 
-### 📡 Security & Member CRUD API Endpoints
+### 📡 Security & REST API Endpoints
 
-All Member endpoints require the **Bearer JWT** authorization header: `Authorization: Bearer <token>`
+All secure endpoints require the **Bearer JWT** authorization header: `Authorization: Bearer <token>`
 
 | Method | Endpoint | Description | Auth Requirement |
 | :--- | :--- | :--- | :--- |
@@ -227,6 +227,10 @@ All Member endpoints require the **Bearer JWT** authorization header: `Authoriza
 | **GET** | `/members` | List members (supports page/search/sorting) | Bearer Token Required |
 | **GET** | `/members/:id` | Fetch specific cardholder by UUID | Bearer Token Required |
 | **PUT** | `/members/:id` | Update cardholder details | Bearer Token Required (Zod validated) |
+| **POST** | `/books` | Create a new book catalog | Bearer Token Required (Zod validated) |
+| **GET** | `/books` | List books (supports page/search/sorting/filters) | Bearer Token Required |
+| **GET** | `/books/:id` | Fetch specific book by UUID | Bearer Token Required |
+| **PUT** | `/books/:id` | Update book details and inventory | Bearer Token Required (Zod validated) |
 
 ---
 
@@ -329,6 +333,72 @@ Supports query parameters:
     "name": "Rahul Sharma Updated",
     "email": "rahul@example.com",
     "phone": "9999988888"
+  }
+}
+```
+
+#### 5. Register Book (`POST /books`)
+- **Request Payload**:
+```json
+{
+  "title": "Atomic Habits",
+  "author": "James Clear",
+  "isbn": "9780735211292",
+  "quantity": 10,
+  "availableQuantity": 10
+}
+```
+- **Response Payload**:
+```json
+{
+  "success": true,
+  "message": "Book created successfully",
+  "data": {
+    "id": "7ac19532-6804-4b57-a9a7-47b2ea1a243e",
+    "title": "Atomic Habits",
+    "author": "James Clear",
+    "isbn": "9780735211292",
+    "quantity": 10,
+    "availableQuantity": 10,
+    "createdAt": "2026-05-28T00:00:00.000Z",
+    "updatedAt": "2026-05-28T00:00:00.000Z"
+  }
+}
+```
+
+#### 6. List Books (`GET /books`)
+Supports query parameters:
+* `page`: page index (default: `1`)
+* `limit`: records limit (default: `10`)
+* `search`: filters across `title`, `author`, and `isbn` (case-insensitive substring match)
+* `sortBy`: field to sort by (`title`, `author`, `isbn`, `quantity`, `availableQuantity`, `createdAt`)
+* `sortOrder`: `asc` or `desc`
+* `available`: `true` returns only in-stock items (`availableQuantity > 0`)
+* `lowStock`: `true` returns only low-stock items (`availableQuantity <= 2`)
+
+- **Example Query**: `GET /books?page=1&limit=5&search=atomic&available=true`
+- **Response Payload**:
+```json
+{
+  "success": true,
+  "message": "Books retrieved successfully",
+  "data": {
+    "books": [
+      {
+        "id": "7ac19532-6804-4b57-a9a7-47b2ea1a243e",
+        "title": "Atomic Habits",
+        "author": "James Clear",
+        "isbn": "9780735211292",
+        "quantity": 10,
+        "availableQuantity": 10
+      }
+    ],
+    "meta": {
+      "total": 1,
+      "page": 1,
+      "limit": 5,
+      "totalPages": 1
+    }
   }
 }
 ```
