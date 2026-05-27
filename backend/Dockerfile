@@ -1,20 +1,28 @@
-# Build stage
-FROM node:20-alpine AS build
+# Base stage
+FROM node:20-alpine AS base
 
 WORKDIR /usr/src/app
 
 COPY package*.json ./
 COPY prisma ./prisma/
 
-RUN npm ci
+RUN npm install
 
 COPY . .
 
 RUN npx prisma generate
+
+# Development target stage (ts-node-dev hot reload)
+FROM base AS development
+EXPOSE 5000
+CMD ["npm", "run", "dev"]
+
+# Production build compilation target stage
+FROM base AS build
 RUN npm run build
 
-# Production stage
-FROM node:20-alpine
+# Production target stage
+FROM node:20-alpine AS production
 
 WORKDIR /usr/src/app
 
