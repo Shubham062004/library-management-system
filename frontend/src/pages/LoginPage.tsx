@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { BookOpen, Lock, Mail, AlertCircle, Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
   const { login } = useAuth();
+  const { showToast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -15,17 +17,21 @@ export default function LoginPage() {
 
     // Simple validators
     if (!email || !password) {
-      setError('Please fill in all credentials fields.');
+      const msg = 'Please fill in all credentials fields.';
+      setError(msg);
+      showToast(msg, 'error');
       return;
     }
 
     setLoading(true);
     try {
       await login(email, password);
+      showToast('Welcome back, Administrator!', 'success');
     } catch (err: any) {
       console.error(err);
       const msg = err.response?.data?.message || 'Invalid email or password. Please try again.';
       setError(msg);
+      showToast(msg, 'error');
     } finally {
       setLoading(false);
     }
