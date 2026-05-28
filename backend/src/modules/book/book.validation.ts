@@ -7,7 +7,7 @@ export const createBookSchema = z
   .object({
     title: z.string().min(1, 'Title is required'),
     author: z.string().min(1, 'Author is required'),
-    isbn: z.string().min(1, 'ISBN is required'),
+    isbn: z.string().regex(/^(?:\d{10}|\d{13})$/, 'ISBN must be a valid 10 or 13 digit numeric string'),
     quantity: z.number().int('Quantity must be an integer').min(0, 'Quantity cannot be negative'),
     availableQuantity: z
       .number()
@@ -26,7 +26,7 @@ export const updateBookSchema = z
   .object({
     title: z.string().min(1, 'Title cannot be empty').optional(),
     author: z.string().min(1, 'Author cannot be empty').optional(),
-    isbn: z.string().min(1, 'ISBN cannot be empty').optional(),
+    isbn: z.string().regex(/^(?:\d{10}|\d{13})$/, 'ISBN must be a valid 10 or 13 digit numeric string').optional(),
     quantity: z
       .number()
       .int('Quantity must be an integer')
