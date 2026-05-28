@@ -19,7 +19,7 @@ async function main() {
       data: {
         name: 'Sarah Connor',
         email: 'sarah.connor@sky.net',
-        phone: '+1-555-0199',
+        phone: '1555010099',
         membershipDate: new Date('2025-01-15T08:00:00Z'),
       },
     }),
@@ -27,7 +27,7 @@ async function main() {
       data: {
         name: 'John Doe',
         email: 'john.doe@gmail.com',
-        phone: '+1-555-0101',
+        phone: '1555010101',
         membershipDate: new Date('2025-02-10T09:30:00Z'),
       },
     }),
@@ -35,7 +35,7 @@ async function main() {
       data: {
         name: 'Jane Smith',
         email: 'jane.smith@yahoo.com',
-        phone: '+1-555-0102',
+        phone: '1555010102',
         membershipDate: new Date('2025-02-15T11:00:00Z'),
       },
     }),
@@ -43,7 +43,7 @@ async function main() {
       data: {
         name: 'Alex Mercer',
         email: 'alex.mercer@gentek.org',
-        phone: '+1-555-0244',
+        phone: '1555010244',
         membershipDate: new Date('2025-03-01T14:15:00Z'),
       },
     }),
@@ -51,7 +51,7 @@ async function main() {
       data: {
         name: 'Bruce Wayne',
         email: 'bruce@waynecorp.com',
-        phone: '+1-555-0911',
+        phone: '1555010911',
         membershipDate: new Date('2025-03-10T10:00:00Z'),
       },
     }),
@@ -59,7 +59,7 @@ async function main() {
       data: {
         name: 'Clark Kent',
         email: 'clark.kent@dailyplanet.com',
-        phone: '+1-555-0777',
+        phone: '1555010777',
         membershipDate: new Date('2025-03-15T09:00:00Z'),
       },
     }),
@@ -67,7 +67,7 @@ async function main() {
       data: {
         name: 'Peter Parker',
         email: 'peter.parker@bugle.com',
-        phone: '+1-555-0616',
+        phone: '1555010616',
         membershipDate: new Date('2025-04-01T15:45:00Z'),
       },
     }),
@@ -75,7 +75,7 @@ async function main() {
       data: {
         name: 'Diana Prince',
         email: 'diana@themyscira.gov',
-        phone: '+1-555-0001',
+        phone: '1555010001',
         membershipDate: new Date('2025-04-05T08:30:00Z'),
       },
     }),
@@ -83,7 +83,7 @@ async function main() {
       data: {
         name: 'Tony Stark',
         email: 'tony@starkindustries.com',
-        phone: '+1-555-3000',
+        phone: '1555013000',
         membershipDate: new Date('2025-04-20T16:00:00Z'),
       },
     }),
@@ -91,7 +91,7 @@ async function main() {
       data: {
         name: 'Steve Rogers',
         email: 'srogers@shieldup.org',
-        phone: '+1-555-1941',
+        phone: '1555011941',
         membershipDate: new Date('2025-05-01T07:15:00Z'),
       },
     }),

@@ -28,8 +28,9 @@ WORKDIR /usr/src/app
 
 COPY package*.json ./
 COPY prisma ./prisma/
+COPY entrypoint.sh ./
 
-RUN npm ci --only=production
+RUN npm ci --only=production && chmod +x entrypoint.sh
 
 COPY --from=build /usr/src/app/dist ./dist
 COPY --from=build /usr/src/app/node_modules/.prisma ./node_modules/.prisma
@@ -39,4 +40,5 @@ EXPOSE 5000
 ENV PORT=5000
 ENV NODE_ENV=production
 
+ENTRYPOINT ["./entrypoint.sh"]
 CMD ["node", "dist/app.js"]

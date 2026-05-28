@@ -51,6 +51,8 @@ model Issuance {
   member Member @relation(fields: [memberId], references: [id], onDelete: Restrict)
   book   Book   @relation(fields: [bookId], references: [id], onDelete: Restrict)
 
+  @@index([memberId])
+  @@index([bookId])
   @@index([status])
   @@index([issueDate])
   @@index([targetReturnDate])

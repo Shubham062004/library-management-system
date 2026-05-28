@@ -15,30 +15,40 @@ export class IssuanceService {
    */
   public async issueBook(data: IssueBookInput) {
     return await prisma.$transaction(async (tx) => {
-      // 1. Verify member exists
-      const member = await tx.member.findUnique({
-        where: { id: data.memberId },
-      });
-
+      // 1. Acquire transaction row lock for Member to prevent concurrent loans processing
+      const members = await tx.$queryRaw<any[]>`
+        SELECT * FROM "Member" WHERE id = ${data.memberId}::uuid FOR UPDATE;
+      `;
+      const member = members[0];
       if (!member) {
         throw new NotFoundError(`Member with ID ${data.memberId} not found.`);
       }
 
-      // 2. Verify book exists
-      const book = await tx.book.findUnique({
-        where: { id: data.bookId },
-      });
+      // 2. Count active outstanding checkouts (borrow ceiling check)
+      const activeLoans = await tx.$queryRaw<any[]>`
+        SELECT COUNT(*)::int as count FROM "Issuance" 
+        WHERE "memberId" = ${data.memberId}::uuid AND status = 'ISSUED';
+      `;
+      const loanCount = activeLoans[0]?.count || 0;
+      if (loanCount >= 5) {
+        throw new BadRequestError("Member has reached maximum borrowing limit.");
+      }
 
+      // 3. Acquire transaction row lock for Book to prevent inventory race conditions
+      const books = await tx.$queryRaw<any[]>`
+        SELECT * FROM "Book" WHERE id = ${data.bookId}::uuid FOR UPDATE;
+      `;
+      const book = books[0];
       if (!book) {
         throw new NotFoundError(`Book with ID ${data.bookId} not found.`);
       }
 
-      // 3. Ensure book is in stock
+      // 4. Ensure book is in stock
       if (book.availableQuantity <= 0) {
         throw new BadRequestError(`Book '${book.title}' is currently unavailable (out of stock).`);
       }
 
-      // 4. Create issuance record
+      // 5. Create issuance record
       const issuance = await tx.issuance.create({
         data: {
           memberId: data.memberId,
@@ -56,7 +66,7 @@ export class IssuanceService {
         },
       });
 
-      // 5. Decrement book availableQuantity by 1
+      // 6. Decrement book availableQuantity by 1
       await tx.book.update({
         where: { id: data.bookId },
         data: {
@@ -73,11 +83,11 @@ export class IssuanceService {
    */
   public async returnBook(id: string) {
     return await prisma.$transaction(async (tx) => {
-      // 1. Locate issuance
-      const issuance = await tx.issuance.findUnique({
-        where: { id },
-      });
-
+      // 1. Acquire transaction row lock for Issuance to prevent concurrent returns
+      const issuances = await tx.$queryRaw<any[]>`
+        SELECT * FROM "Issuance" WHERE id = ${id}::uuid FOR UPDATE;
+      `;
+      const issuance = issuances[0];
       if (!issuance) {
         throw new NotFoundError(`Issuance record with ID ${id} not found.`);
       }
