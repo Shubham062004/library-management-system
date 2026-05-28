@@ -237,6 +237,11 @@ All secure endpoints require the **Bearer JWT** authorization header: `Authoriza
 | **GET** | `/issuances/overdue` | List overdue active borrows | Bearer Token Required |
 | **GET** | `/issuances/:id` | Fetch specific issuance details | Bearer Token Required |
 | **PUT** | `/issuances/:id/return` | Return a borrowed book | Bearer Token Required |
+| **GET** | `/analytics/stats` | Fetch general library stats summary | Bearer Token Required |
+| **GET** | `/analytics/overdue-summary` | Fetch active past-deadline borrows by member | Bearer Token Required |
+| **GET** | `/analytics/books/never-borrowed` | Fetch list of books never borrowed | Bearer Token Required |
+| **GET** | `/analytics/books/outstanding` | Fetch outstanding borrowed books | Bearer Token Required |
+| **GET** | `/analytics/books/top-borrowed` | Fetch top 10 most borrowed books | Bearer Token Required |
 
 ---
 
@@ -488,6 +493,106 @@ Supports query parameters:
       }
     ]
   }
+```
+
+#### 10. Fetch Library Stats Summary (`GET /analytics/stats`)
+- **Response Payload**:
+```json
+{
+  "success": true,
+  "message": "Library statistics retrieved successfully",
+  "data": {
+    "totalBooks": 25,
+    "totalMembers": 10,
+    "activeIssuances": 3,
+    "overdueBooks": 1
+  }
+}
+```
+
+#### 11. Fetch Overdue Summary Grouped by Member (`GET /analytics/overdue-summary`)
+- **Response Payload**:
+```json
+{
+  "success": true,
+  "message": "Overdue statistics summary retrieved successfully",
+  "data": {
+    "overdueCounts": {
+      "totalOverdueBooks": 1,
+      "totalOverdueMembers": 1
+    },
+    "overdueMembers": [
+      {
+        "memberName": "Rahul Sharma",
+        "email": "rahul@example.com",
+        "overdueCount": 1
+      }
+    ],
+    "overdueBooks": [
+      {
+        "memberName": "Rahul Sharma",
+        "email": "rahul@example.com",
+        "bookTitle": "Atomic Habits",
+        "author": "James Clear",
+        "issueDate": "2026-05-10T00:00:00.000Z",
+        "targetReturnDate": "2026-05-20T00:00:00.000Z",
+        "overdueDays": 8
+      }
+    ]
+  }
+}
+```
+
+#### 12. Fetch Books Never Borrowed (`GET /analytics/books/never-borrowed`)
+- **Response Payload (Optimized LEFT JOIN Raw SQL Query)**:
+```json
+{
+  "success": true,
+  "message": "Never borrowed books retrieved successfully",
+  "data": [
+    {
+      "bookTitle": "Clean Architecture",
+      "author": "Robert C. Martin"
+    },
+    {
+      "bookTitle": "Designing Data-Intensive Applications",
+      "author": "Martin Kleppmann"
+    }
+  ]
+}
+```
+
+#### 13. Fetch Outstanding Borrowings (`GET /analytics/books/outstanding`)
+- **Response Payload (Optimized INNER JOIN Raw SQL Query)**:
+```json
+{
+  "success": true,
+  "message": "Outstanding books retrieved successfully",
+  "data": [
+    {
+      "memberName": "Rahul Sharma",
+      "bookTitle": "Atomic Habits",
+      "issueDate": "2026-05-10T00:00:00.000Z",
+      "targetReturnDate": "2026-05-20T00:00:00.000Z",
+      "author": "James Clear"
+    }
+  ]
+}
+```
+
+#### 14. Fetch Top 10 Borrowed Books (`GET /analytics/books/top-borrowed`)
+- **Response Payload (Optimized GROUP BY Raw SQL Aggregation)**:
+```json
+{
+  "success": true,
+  "message": "Top borrowed books retrieved successfully",
+  "data": [
+    {
+      "bookTitle": "Atomic Habits",
+      "borrowCount": 5,
+      "uniqueMembers": 3
+    }
+  ]
 }
 ```
 
@@ -548,4 +653,12 @@ All server operations return a standardized JSON format:
 - **Why centralized error handler middleware?**
   Prevents stack trace leaks and maintains uniform interface contracts. Uncaught errors are safely logged internally while consumers receive clean, formatted, and secure JSON responses without exposing internal server architecture.
 - **Why rate limiters on public login endpoints?**
-  Prevents brute-force credential stuffing. Limiting requests per IP slows down automated spammers, protecting the authentication database from server exhaustion.
+  Prevents brute-force credential stuffing. Limiting requests per IP slows down automated spammers, protecting the authentication database from server exhaustion.
+
+### 📊 SQL Analytics & Reporting Questions
+- **Why LEFT JOIN for Never Borrowed Books query?**
+  Using a `LEFT JOIN` on the Book table to the Issuance table captures all catalog books regardless of whether they have any borrowing records. Filtering with `WHERE i."bookId" IS NULL` isolates only the books that have never been issued.
+- **Why GROUP BY and COUNT(DISTINCT) for Top Borrowed Books?**
+  `GROUP BY b.id, b.title` collapses borrowing records to compute total transactions per book via `COUNT(i.id)`. Applying `COUNT(DISTINCT i."memberId")` is vital to count unique readers; without `DISTINCT`, if one member borrows the same book five times, they would count as five unique readers, corrupting the metrics.
+- **Why raw SQL instead of ORM abstractions for analytics queries?**
+  Analytics queries require specific joins, aggregations, and grouping structures. While ORMs can express these, raw SQL gives database developers exact control over execution plans, indexes, and eliminates unnecessary ORM overhead, ensuring extreme database performance on massive datasets.
