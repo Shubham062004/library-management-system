@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { BookOpen, Users, ClipboardList, LayoutDashboard, Menu, LogOut } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 interface RootLayoutProps {
   children: React.ReactNode;
 }
 
 export default function RootLayout({ children }: RootLayoutProps) {
+  const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
 
@@ -62,15 +64,19 @@ export default function RootLayout({ children }: RootLayoutProps) {
         {/* Sidebar Footer / Profile */}
         <div className="p-4 border-t border-dark-800 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-brand-500/10 flex items-center justify-center text-brand-400 font-semibold border border-brand-500/20">
-              AD
+            <div className="w-10 h-10 rounded-xl bg-brand-500/10 flex items-center justify-center text-brand-400 font-semibold border border-brand-500/20 uppercase">
+              {user?.email ? user.email.substring(0, 2) : 'AD'}
             </div>
-            <div>
-              <p className="text-sm font-semibold text-white">Admin User</p>
-              <p className="text-xs text-dark-400">admin@luminalib.com</p>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-white truncate">Administrator</p>
+              <p className="text-xs text-dark-400 truncate">{user?.email || 'admin@library.com'}</p>
             </div>
           </div>
-          <button className="p-2 rounded-lg text-dark-400 hover:bg-dark-800 hover:text-white transition-colors">
+          <button 
+            onClick={logout}
+            className="p-2 rounded-lg text-dark-400 hover:bg-dark-800 hover:text-rose-400 hover:bg-rose-500/10 transition-colors flex-shrink-0"
+            title="Sign Out"
+          >
             <LogOut className="w-4 h-4" />
           </button>
         </div>

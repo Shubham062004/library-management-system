@@ -22,6 +22,7 @@ library-management-system/
 │   │   ├── api/          # Axios instance and endpoints
 │   │   ├── assets/       # Visual media assets and globally loaded icons
 │   │   ├── components/   # Reusable UI elements (inputs, buttons, overlays)
+│   │   ├── context/      # React Context (AuthProvider session state)
 │   │   ├── hooks/        # Custom React hooks (forms, fetches, states)
 │   │   ├── layouts/      # Sidebar and top-bar layout configurations
 │   │   ├── pages/        # Dashboard, Books, Members, and Transaction views
@@ -212,6 +213,34 @@ LuminaLib implements a stateless, token-based security architecture using JSON W
 - **Cryptographic Security**: Passwords are saved as secure salt hashes using **bcrypt** with a default salt round factor of `10`.
 - **IP Rate Limiting**: Prevents automated brute-force attacks by limiting login requests to a maximum of `100` attempts per `15` minutes per IP.
 - **Helmet Headers**: Enforces strict security configurations (HSTS, Content Security Policies) on every server response.
+
+---
+
+## 💻 Frontend Architecture & Session Security
+
+LuminaLib utilizes a highly scalable, component-based frontend architecture built on **React v19**, **Vite**, **TypeScript**, and styled with **Tailwind CSS**. It implements secure, token-based session management.
+
+### 🔑 Frontend Session Lifecycle Map
+```text
+  User Login (POST /auth/login) ──> Set localStorage('token') ──> React Context AuthState Updated
+                                                                               │
+  Load Admin Portal (GET /auth/me) ──> Axios Request Interceptor ──> Verify JWT and load Profile
+                                                                               │
+  API 401 Unauth error response ──> Axios Response Interceptor ──> Clear local storage & Redirect to /login
+```
+
+### 🛡️ Core Architectural Components
+1. **React Context AuthProvider (`AuthContext.tsx`)**
+   - Serves as the central repository for session state, validating credentials on mount, managing administrator profile parameters (`/auth/me`), caching raw token credentials, and resetting memory trees during sign-out.
+2. **Axios Client Interceptors (`axios.ts`)**
+   - **Request Interceptor**: Scans cache storage for stored JWT strings and automatically injects them into the HTTP headers (`Authorization: Bearer <token>`) of outgoing requests.
+   - **Response Interceptor**: Captures incoming failures. If the backend returns `401 Unauthorized` (e.g. token expired or revoked), the interceptor automatically flushes user state and redirects the browser to `/login`.
+3. **Reactive Route Guards (`ProtectedRoute` & `PublicRoute`)**
+   - **`<ProtectedRoute>`**: Guards restricted dashboards and panels, evaluating authentication states before displaying elements. Blocks and redirects anonymous queries to `/login`.
+   - **`<PublicRoute>`**: Safeguards authentication pages like `/login` from logged-in administrators, automatically redirecting them to the core portal view (`/`).
+4. **Visually Stunning Admin Panel**
+   - Implements beautiful responsive layout structures (sidebar navigations, sticky headers, profile footers) that adjust to Desktop, Tablet, and Mobile resolutions.
+   - Displays real-time data visualizers (weekly borrow trend charts), customized action blocks (task triggers), skeleton preloading blocks, and robust empty/error screens.
 
 ---
 
@@ -661,4 +690,14 @@ All server operations return a standardized JSON format:
 - **Why GROUP BY and COUNT(DISTINCT) for Top Borrowed Books?**
   `GROUP BY b.id, b.title` collapses borrowing records to compute total transactions per book via `COUNT(i.id)`. Applying `COUNT(DISTINCT i."memberId")` is vital to count unique readers; without `DISTINCT`, if one member borrows the same book five times, they would count as five unique readers, corrupting the metrics.
 - **Why raw SQL instead of ORM abstractions for analytics queries?**
-  Analytics queries require specific joins, aggregations, and grouping structures. While ORMs can express these, raw SQL gives database developers exact control over execution plans, indexes, and eliminates unnecessary ORM overhead, ensuring extreme database performance on massive datasets.
+  Analytics queries require specific joins, aggregations, and grouping structures. While ORMs can express these, raw SQL gives database developers exact control over execution plans, indexes, and eliminates unnecessary ORM overhead, ensuring extreme database performance on massive datasets.
+
+### 💻 Frontend Architecture & Session Security Questions
+- **Why Axios Request/Response Interceptors?**
+  Attaching the token automatically in request interceptors ensures that all protected microservice requests are correctly signed without writing token injection logic in every separate axios call. Response interceptors act as a centralized boundary, immediately identifying token expirations (401s), flushing the storage, and routing back to `/login` seamlessly.
+- **Why Protected Routes & Public Routes guards?**
+  This prevents route manipulation in the browser (e.g. manually entering `/` in the address bar). Guards evaluate active session loaders, blocking unauthenticated users from entering operational panels, and redirecting logged-in administrators away from the login panel.
+- **Why React Context for state management instead of Zustand?**
+  React Context is built-in and perfect for managing session states (auth parameters, active token, administrator profile) across the entire component tree, requiring no third-party package overhead and keeping the bundle size highly optimized.
+- **Why responsive glassmorphic layouts?**
+  It provides a modern, state-of-the-art administrative experience that matches premium enterprise platforms. It uses flexbox, custom scroll overlays, and mobile menu grids to guarantee absolute layout consistency across Desktop, Tablet, and Mobile displays.
