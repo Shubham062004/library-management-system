@@ -9,6 +9,7 @@ import authRouter from './routes/authRoutes';
 import memberRouter from './modules/member/member.routes';
 import bookRouter from './modules/book/book.routes';
 import issuanceRouter from './modules/issuance/issuance.routes';
+import analyticsRouter from './modules/analytics/analytics.routes';
 import { errorHandler } from './middleware/errorHandler';
 
 const app = express();
@@ -46,6 +47,7 @@ app.use('/auth', authRouter);
 app.use('/members', memberRouter);
 app.use('/books', bookRouter);
 app.use('/issuances', issuanceRouter);
+app.use('/analytics', analyticsRouter);
 app.use('/', router);
 
 // Catch-all for undefined route targets
