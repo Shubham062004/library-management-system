@@ -230,6 +230,30 @@ LuminaLib organizes OpenAPI components cleanly under `backend/src/docs/` to avoi
 
 ---
 
+## 🧪 QA Testing & Validation Workflows
+
+LuminaLib implements a comprehensive backend Quality Assurance (QA) and API validation suite to guarantee absolute transactional consistency and production readiness.
+
+### 📊 QA Artifacts & Manuals
+Detailed testing guidelines, constraints whitelists, and production release parameters are documented modularly in the codebase:
+- [QA Testing Guide](file:///c:/Users/shubh/OneDrive/Desktop/Projects/library-management-system/backend/docs/qa/testing_guide.md): Details our multi-layer testing hierarchy, the public health checks `/health`, status assertions whitelists, and Postman execution plans.
+- [Zod API Validation Checklist](file:///c:/Users/shubh/OneDrive/Desktop/Projects/library-management-system/backend/docs/qa/validation_checklist.md): Standardizes the active validation schemas, required request payload parameters, phone and ISBN checks.
+- [Edge Cases Testing Manual](file:///c:/Users/shubh/OneDrive/Desktop/Projects/library-management-system/backend/docs/qa/edge_cases.md): Maps business boundary validations (duplicate ISBNs/emails, book stock exhaustions, max borrowing caps, double return preventions).
+- [Production Readiness Checklist](file:///c:/Users/shubh/OneDrive/Desktop/Projects/library-management-system/backend/docs/qa/production_readiness.md): Establishes deployment checkout parameters (Express request body limits, Helmet security headers, CORS origin restrictions, database index maps).
+
+### 🚀 Bootstrapping Automated Postman Tests
+We expose preconfigured JSON assets to verify all endpoints (Auth, Members, Books, Issuances, Analytics, Health) automatically:
+1. **Import Assets**: Open Postman, click **Import**, and select the two files in the repository:
+   * **Collection**: [LuminaLib.postman_collection.json](file:///c:/Users/shubh/OneDrive/Desktop/Projects/library-management-system/backend/postman/LuminaLib.postman_collection.json)
+   * **Environment**: [LuminaLib.postman_environment.json](file:///c:/Users/shubh/OneDrive/Desktop/Projects/library-management-system/backend/postman/LuminaLib.postman_environment.json)
+2. **Execute Onboarding Auth**:
+   * Run `POST /auth/login` inside the **Auth** folder using the preconfigured credentials.
+   * Postman executes a native test script that extracts the returned secure JWT token and saves it globally to the `TOKEN` environment variable.
+3. **Inherited Token Testing**:
+   * All protected endpoints inside the collection automatically inherit this authenticated token structure (`Bearer {{TOKEN}}`), letting you execute sequential query scripts with a single click!
+
+---
+
 ## 🔒 Authentication & API Security Architecture
 
 LuminaLib implements a stateless, token-based security architecture using JSON Web Tokens (JWT) and cryptographic hashing.
