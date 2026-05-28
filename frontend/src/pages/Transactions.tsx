@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import api from '../api/axios';
+import { useToast } from '../context/ToastContext';
 import { Plus, ClipboardList, ShieldAlert, RefreshCw, X, Loader2, CheckCircle2, AlertTriangle, ArrowRightLeft } from 'lucide-react';
 
 interface Issuance {
@@ -32,6 +33,7 @@ interface Meta {
 export default function Transactions() {
   const [issuances, setIssuances] = useState<Issuance[]>([]);
   const [meta, setMeta] = useState<Meta | null>(null);
+  const { showToast } = useToast();
 
   // Queries
   const [page, setPage] = useState(1);
@@ -102,16 +104,28 @@ export default function Transactions() {
 
     // Front-end validations
     if (!/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(memberId)) {
-      return setFormError('Please enter a valid Member UUID');
+      const msg = 'Please enter a valid Member UUID';
+      setFormError(msg);
+      showToast(msg, 'error');
+      return;
     }
     if (!/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(bookId)) {
-      return setFormError('Please enter a valid Book UUID');
+      const msg = 'Please enter a valid Book UUID';
+      setFormError(msg);
+      showToast(msg, 'error');
+      return;
     }
     if (!targetReturnDate) {
-      return setFormError('Target return date is required');
+      const msg = 'Target return date is required';
+      setFormError(msg);
+      showToast(msg, 'error');
+      return;
     }
     if (new Date(targetReturnDate) <= new Date()) {
-      return setFormError('Target return date must be in the future');
+      const msg = 'Target return date must be in the future';
+      setFormError(msg);
+      showToast(msg, 'error');
+      return;
     }
 
     setSubmitting(true);
@@ -122,6 +136,7 @@ export default function Transactions() {
         targetReturnDate: new Date(targetReturnDate).toISOString(),
       });
       if (res.data?.success) {
+        showToast('Book checked out successfully!', 'success');
         setModalOpen(false);
         setPage(1);
         setFilterType('all');
@@ -129,7 +144,9 @@ export default function Transactions() {
       }
     } catch (err: any) {
       console.error(err);
-      setFormError(err.response?.data?.message || 'Issuance failed. Double check stock and member active loan limits.');
+      const errMsg = err.response?.data?.message || 'Issuance failed. Double check stock and member active loan limits.';
+      setFormError(errMsg);
+      showToast(errMsg, 'error');
     } finally {
       setSubmitting(false);
     }
@@ -139,11 +156,12 @@ export default function Transactions() {
     try {
       const res = await api.put(`/issuances/${issuanceId}/return`);
       if (res.data?.success) {
+        showToast('Book returned and inventory updated successfully!', 'success');
         fetchTransactions();
       }
     } catch (err: any) {
       console.error(err);
-      alert(err.response?.data?.message || 'Return failed. Ensure transaction parameters are consistent.');
+      showToast(err.response?.data?.message || 'Return failed. Ensure transaction parameters are consistent.', 'error');
     }
   };
 

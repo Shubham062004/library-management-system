@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import api from '../api/axios';
+import { useToast } from '../context/ToastContext';
 import { Search, Plus, Users, Edit3, UserCheck, ShieldAlert, RefreshCw, X, Loader2, ArrowUpDown } from 'lucide-react';
 
 interface Member {
@@ -21,6 +22,7 @@ interface Meta {
 export default function Members() {
   const [members, setMembers] = useState<Member[]>([]);
   const [meta, setMeta] = useState<Meta | null>(null);
+  const { showToast } = useToast();
   
   // Queries
   const [page, setPage] = useState(1);
@@ -109,6 +111,7 @@ export default function Members() {
         // Edit Action
         const res = await api.put(`/members/${editingMember.id}`, { name, email, phone });
         if (res.data?.success) {
+          showToast('Member credentials updated successfully!', 'success');
           setModalOpen(false);
           fetchMembers();
         }
@@ -116,6 +119,7 @@ export default function Members() {
         // Create Action
         const res = await api.post('/members', { name, email, phone });
         if (res.data?.success) {
+          showToast('New member registered successfully!', 'success');
           setModalOpen(false);
           setPage(1);
           fetchMembers();
@@ -123,7 +127,9 @@ export default function Members() {
       }
     } catch (err: any) {
       console.error(err);
-      setFormError(err.response?.data?.message || 'Transaction failed. Check parameters and try again.');
+      const errMsg = err.response?.data?.message || 'Transaction failed. Check parameters and try again.';
+      setFormError(errMsg);
+      showToast(errMsg, 'error');
     } finally {
       setSubmitting(false);
     }

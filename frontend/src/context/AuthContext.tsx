@@ -26,7 +26,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // Fetch admin profile to check if token is valid
           const res = await api.get('/auth/me');
           if (res.data && res.data.success) {
-            setUser(res.data.data);
+            setUser(res.data.data.user);
             setToken(storedToken);
           } else {
             // Invalid response, clear credentials
@@ -57,7 +57,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Fetch current user details
         const meRes = await api.get('/auth/me');
         if (meRes.data && meRes.data.success) {
-          setUser(meRes.data.data);
+          setUser(meRes.data.data.user);
         }
       } else {
         throw new Error('Authentication failed');

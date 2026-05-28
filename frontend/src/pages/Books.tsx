@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import api from '../api/axios';
+import { useToast } from '../context/ToastContext';
 import { Search, Plus, Book, Edit3, ShieldAlert, RefreshCw, X, Loader2, ArrowUpDown, Tag, AlertTriangle } from 'lucide-react';
 
 interface BookItem {
@@ -22,6 +23,7 @@ interface Meta {
 export default function Books() {
   const [books, setBooks] = useState<BookItem[]>([]);
   const [meta, setMeta] = useState<Meta | null>(null);
+  const { showToast } = useToast();
 
   // Query variables
   const [page, setPage] = useState(1);
@@ -129,6 +131,7 @@ export default function Books() {
           availableQuantity,
         });
         if (res.data?.success) {
+          showToast('Book catalog updated successfully!', 'success');
           setModalOpen(false);
           fetchBooks();
         }
@@ -142,6 +145,7 @@ export default function Books() {
           availableQuantity,
         });
         if (res.data?.success) {
+          showToast('New book cataloged successfully!', 'success');
           setModalOpen(false);
           setPage(1);
           fetchBooks();
@@ -149,7 +153,9 @@ export default function Books() {
       }
     } catch (err: any) {
       console.error(err);
-      setFormError(err.response?.data?.message || 'Transaction failed. Verify parameters and retry.');
+      const errMsg = err.response?.data?.message || 'Transaction failed. Verify parameters and retry.';
+      setFormError(errMsg);
+      showToast(errMsg, 'error');
     } finally {
       setSubmitting(false);
     }
