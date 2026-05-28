@@ -11,6 +11,8 @@ import bookRouter from './modules/book/book.routes';
 import issuanceRouter from './modules/issuance/issuance.routes';
 import analyticsRouter from './modules/analytics/analytics.routes';
 import { errorHandler } from './middleware/errorHandler';
+import swaggerUi from 'swagger-ui-express';
+import { swaggerSpec } from './docs/swagger';
 
 const app = express();
 
@@ -41,6 +43,9 @@ if (config.nodeEnv !== 'test') {
 // JSON Request Parsers (Limits size to prevent DOS payloads)
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+
+// Swagger Interactive Documentation Portal
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Mount REST Routers
 app.use('/auth', authRouter);

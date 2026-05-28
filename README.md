@@ -198,6 +198,38 @@ depends_on:
 
 ---
 
+## 📖 Interactive OpenAPI/Swagger Documentation
+
+LuminaLib incorporates a production-grade **OpenAPI 3.0** documentation suite built using `swagger-ui-express` and `swagger-jsdoc` to promote API discoverability and frictionless developer onboarding.
+
+### 🌐 Accessing the Docs Portal
+Boot up the stack (via Docker or local runtime) and open your browser to:
+- **Interactive Swagger UI**: [http://localhost:5000/api-docs](http://localhost:5000/api-docs)
+
+### 🔑 Dynamic JWT Authorization inside Swagger
+To execute and test private/protected API endpoints directly from your browser:
+1. Open the `/auth/login` endpoint accordion under the **Auth** tag.
+2. Click **Try it out** and execute the request with the seeded admin details:
+   ```json
+   {
+     "email": "admin@library.com",
+     "password": "password123"
+   }
+   ```
+3. Copy the returned secure JWT token string from the response payload (`data.token`).
+4. Scroll to the top of the page, click the green **Authorize** button.
+5. Paste your copied token inside the value field, and click **Authorize**.
+6. Perfect! All protected accordions (Members, Books, Issuances, and Analytics) are now authenticated. You can run dynamic commands directly inside the Swagger interface!
+
+### 📂 Modular Documentation Architecture
+LuminaLib organizes OpenAPI components cleanly under `backend/src/docs/` to avoid bloated route controllers:
+- `swagger.ts`: Registers root configurations, servers, info metadata, and the `bearerAuth` security scheme.
+- `schemas/`: Defines reusable components schemas mapping models, input validations, standard responses, and validation/conflict errors.
+- `examples/`: Configures realistic payload objects for rapid testing mockups.
+- `paths/`: Modularizes route definitions, queries, path variables, responses, and authorization boundaries by domain tag.
+
+---
+
 ## 🔒 Authentication & API Security Architecture
 
 LuminaLib implements a stateless, token-based security architecture using JSON Web Tokens (JWT) and cryptographic hashing.
@@ -700,4 +732,12 @@ All server operations return a standardized JSON format:
 - **Why React Context for state management instead of Zustand?**
   React Context is built-in and perfect for managing session states (auth parameters, active token, administrator profile) across the entire component tree, requiring no third-party package overhead and keeping the bundle size highly optimized.
 - **Why responsive glassmorphic layouts?**
-  It provides a modern, state-of-the-art administrative experience that matches premium enterprise platforms. It uses flexbox, custom scroll overlays, and mobile menu grids to guarantee absolute layout consistency across Desktop, Tablet, and Mobile displays.
+  It provides a modern, state-of-the-art administrative experience that matches premium enterprise platforms. It uses flexbox, custom scroll overlays, and mobile menu grids to guarantee absolute layout consistency across Desktop, Tablet, and Mobile displays.
+
+### 📖 OpenAPI & Swagger Documentation Questions
+- **Why JSDoc comments and `swagger-jsdoc` instead of static JSON files?**
+  Co-locating specs as structured JSDoc comments inside routes/docs or importing them in the build pipeline enables "Documentation as Code". It ensures that code modifications and specification updates evolve together, preventing documentation drift.
+- **Why modularize Swagger paths, schemas, and examples?**
+  Monolithic JSDoc blocks quickly clutter and bloat codebase files, making controllers hard to read. Splitting concerns into `src/docs/schemas/`, `/examples/`, and `/paths/` maintains clean software design and code readability.
+- **Why configure `bearerAuth` security schema inside Swagger UI?**
+  Provides a friction-free developer experience (DX). Rather than setting up third-party tools like Postman, developers can authenticate, store the token globally in the browser context, and test secure relational workflows instantly inside the browser.
