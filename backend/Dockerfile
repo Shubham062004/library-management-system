@@ -1,7 +1,7 @@
 # Base stage
 FROM node:20-bookworm-slim AS base
 
-RUN apk add --no-cache openssl
+RUN apt-get update && apt-get install -y openssl
 
 WORKDIR /usr/src/app
 
@@ -26,9 +26,9 @@ FROM base AS build
 RUN npm run build
 
 # Production target stage
-FROM node:20-alpine AS production
+FROM node:20-bookworm-slim AS production
 
-RUN apk add --no-cache openssl
+RUN apt-get update && apt-get install -y openssl
 
 WORKDIR /usr/src/app
 
