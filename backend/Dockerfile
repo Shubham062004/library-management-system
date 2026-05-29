@@ -1,5 +1,7 @@
 # Base stage
-FROM node:20-alpine AS base
+FROM node:20-bookworm-slim AS base
+
+RUN apk add --no-cache openssl
 
 WORKDIR /usr/src/app
 
@@ -14,7 +16,9 @@ RUN npx prisma generate
 
 # Development target stage (ts-node-dev hot reload)
 FROM base AS development
+RUN chmod +x entrypoint.sh
 EXPOSE 5000
+ENTRYPOINT ["./entrypoint.sh"]
 CMD ["npm", "run", "dev"]
 
 # Production build compilation target stage
@@ -23,6 +27,8 @@ RUN npm run build
 
 # Production target stage
 FROM node:20-alpine AS production
+
+RUN apk add --no-cache openssl
 
 WORKDIR /usr/src/app
 
